@@ -327,6 +327,8 @@ dependencies = [
  "octocrab",
  "regex",
  "sea-orm",
+ "serde",
+ "serde_json",
  "serenity",
  "tokio",
 ]

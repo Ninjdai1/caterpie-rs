@@ -39,7 +39,7 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
 
         let valid_link = match action_type {
             actions::ActionType::ReportBug => issue.pull_request.is_none() && issue_ids.comment_id.is_none() && issue.labels.iter().find(|label| label.name == "bug").is_some(),
-            actions::ActionType::ConfirmBug => issue.pull_request.is_none() && issue_ids.comment_id.is_some(),
+            actions::ActionType::ConfirmBug => issue.pull_request.is_none() && issue_ids.comment_id.is_some() && issue.labels.iter().find(|label| label.name == "bug").is_some(),
             actions::ActionType::PRFix => issue.pull_request.is_some(),
         };
 
@@ -61,7 +61,7 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
             }
         };
 
-        if action_creation_date.signed_duration_since(CONTEST_START_DATE).num_seconds() < 0 {
+        if action_creation_date.signed_duration_since(*CONTEST_START_DATE).num_seconds() < 0 {
             command.edit_response(&ctx.http, EditInteractionResponse::new().content(
                     format!("The submitted {} dates from before the start of the contest >.<\nThe contest started <t:{}:R> while the {} was created <t:{}:R>",
                         action_type.get_github_type(),

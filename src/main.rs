@@ -4,21 +4,28 @@ mod utils;
 
 use chrono::{DateTime, Utc};
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, Schema};
-use serenity::all::Ready;
+use serenity::all::{ChannelId, Ready};
 use serenity::all::{Command, CreateInteractionResponse, CreateInteractionResponseMessage, Interaction};
 use serenity::async_trait;
 use serenity::prelude::*;
 
 use std::env;
+use std::sync::LazyLock;
 
 use log::{info, debug, error};
+
+use crate::utils::config::Config;
 
 pub struct Handler {
     db_conn: DatabaseConnection
 }
-    
 
-static CONTEST_START_DATE: DateTime<Utc> = DateTime::from_timestamp(1749506400, 0).unwrap();
+static CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
+    contest_start_timestamp: 1749506400,
+    feed_channel: ChannelId::new(0),
+});
+
+static CONTEST_START_DATE: LazyLock<DateTime<Utc>> = LazyLock::new(|| DateTime::from_timestamp(CONFIG.contest_start_timestamp, 0).unwrap());
 
 
 #[async_trait]
@@ -33,6 +40,7 @@ impl EventHandler for Handler {
                     "submit" => commands::submit::run(&self, &ctx, &command).await,
                     "leaderboard" => commands::leaderboard::run(&self, &ctx, &command).await,
                     "verify" => commands::verify::run(&self, &ctx, &command).await,
+                    "dev" => commands::dev::run(&self, &ctx, &command).await,
                     _ => Err(SerenityError::Other("command not implemented")),
                 };
 
@@ -60,7 +68,8 @@ impl EventHandler for Handler {
             commands::ping::register(),
             commands::submit::register(),
             commands::leaderboard::register(),
-            commands::verify::register()
+            commands::verify::register(),
+            commands::dev::register()
         ]).await;
         debug!("Registered slash commands: {commands:#?}");
         info!("Registered {} commands", commands.unwrap().iter().len());
@@ -71,7 +80,7 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
-    let working_dir = env::var("WORKDIR").expect("Expected a working directory in the environment");
+    let working_dir = env::var("WORKDIR").unwrap_or(".".to_string());
 
     println!("Loading log config file at {}/config/log4rs.yaml", working_dir);
     if let Err(err) = log4rs::init_file(format!("{}/config/log4rs.yaml", working_dir), Default::default()) {
@@ -79,7 +88,8 @@ async fn main() {
         return;
     }
 
-    octocrab::initialise(octocrab::Octocrab::default());
+    let github_pat = env::var("GITHUB_PAT").expect("Expected a github personal access token in the environment");
+    octocrab::initialise(octocrab::Octocrab::builder().personal_token(github_pat).build().unwrap());
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let intents = GatewayIntents::GUILD_MESSAGES
