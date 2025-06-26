@@ -17,9 +17,9 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
     {
         command.defer_ephemeral(&ctx.http).await?;
         let action_type = match *submit_type {
-            "bug_report" => actions::ActionType::ReportBug,
-            "bug_confirm" => actions::ActionType::ConfirmBug,
-            _ => actions::ActionType::PRFix
+            "bug_report" => ActionType::ReportBug,
+            "bug_confirm" => ActionType::ConfirmBug,
+            _ => ActionType::PRFix
         };
 
         let issue_ids_t = IssueIds::from_url(*submit_link);
@@ -39,9 +39,9 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
         log::debug!("Fetched issue #{}: {}", issue.number, issue.title);
 
         let valid_link = match action_type {
-            actions::ActionType::ReportBug => issue.pull_request.is_none() && issue_ids.comment_id.is_none() && issue.labels.iter().find(|label| label.name == "bug").is_some(),
-            actions::ActionType::ConfirmBug => issue.pull_request.is_none() && issue_ids.comment_id.is_some() && issue.labels.iter().find(|label| label.name == "bug").is_some(),
-            actions::ActionType::PRFix => issue.pull_request.is_some(),
+            ActionType::ReportBug => issue.pull_request.is_none() && issue_ids.comment_id.is_none() && issue.labels.iter().find(|label| label.name == "bug").is_some(),
+            ActionType::ConfirmBug => issue.pull_request.is_none() && issue_ids.comment_id.is_some() && issue.labels.iter().find(|label| label.name == "bug").is_some(),
+            ActionType::PRFix => issue.pull_request.is_some(),
         };
 
         if !valid_link {
@@ -50,8 +50,8 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
         }
 
         let action_creation_date = match action_type {
-            actions::ActionType::PRFix | actions::ActionType::ReportBug => issue.created_at,
-            actions::ActionType::ConfirmBug => {
+            ActionType::PRFix | ActionType::ReportBug => issue.created_at,
+            ActionType::ConfirmBug => {
                 let fetched_comment = octocrab::instance().issues("rh-hideout", "pokeemerald-expansion").get_comment(issue_ids.comment_id.unwrap().into()).await;
                 if let Err(_) = fetched_comment {
                     command.edit_response(&ctx.http, EditInteractionResponse::new().content(format!("Couldn't locate comment at provided URL ({}).", submit_link))).await?;
