@@ -81,8 +81,8 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
 
         let reply_builder = EditInteractionResponse::new()
             .content(format!("Submit a {} for {} ?", action_type.to_string(), issue.title))
-            .button(CreateButton::new("submit-confirm").style(ButtonStyle::Success).label("Confirm"))
-            .button(CreateButton::new("submit-cancel").style(ButtonStyle::Danger).label("Cancel"));
+            .button(CreateButton::new("ignore-submit-confirm").style(ButtonStyle::Success).label("Confirm"))
+            .button(CreateButton::new("ignore-submit-cancel").style(ButtonStyle::Danger).label("Cancel"));
 
         command.edit_response(&ctx.http, reply_builder).await?;
         let mut msg = command.get_response(&ctx.http).await?;
@@ -92,7 +92,7 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
             Some(i) => {
                 i.defer(&ctx.http).await?;
                 let args: Vec<_> = i.data.custom_id.split('-').collect();
-                let confirmed = args[1] == "confirm";
+                let confirmed = args[2] == "confirm";
                 if confirmed {
                     let _ = Actions::insert(submitted_action).exec(&h.db_conn).await;
                     command.edit_response(&ctx.http, EditInteractionResponse::new().content(format!("Successfully submitted your {} !", action_type.to_string())).components(vec![]).embeds(vec![])).await?;
