@@ -27,7 +27,7 @@ pub struct Handler {
 
 static CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
     contest_start_timestamp: 1749506400,
-    feed_channel: ChannelId::new(1387691060477689856),
+    feed_channel: ChannelId::new(1387772097471840266),
     permanent_leaderboard: (ChannelId::new(1386765701590814842), MessageId::from(1387686765644615700))
 });
 
@@ -114,9 +114,6 @@ impl EventHandler for Handler {
             self.is_loop_running.swap(true, Ordering::Relaxed);
         }
     }
-
-    async fn cache_ready(&self, ctx: Context, _guilds: Vec<GuildId>) {
-    }
 }
 
 
@@ -124,8 +121,8 @@ impl EventHandler for Handler {
 async fn main() {
     let working_dir = env::var("WORKDIR").unwrap_or(".".to_string());
 
-    println!("Loading log config file at {}/config/log4rs.yaml", working_dir);
-    if let Err(err) = log4rs::init_file(format!("{}/config/log4rs.yaml", working_dir), Default::default()) {
+    println!("Loading log config file at {working_dir}/config/log4rs.yaml");
+    if let Err(err) = log4rs::init_file(format!("{working_dir}/config/log4rs.yaml"), Default::default()) {
         println!("Error while loading logger config: {err:?}");
         return;
     }
@@ -137,7 +134,7 @@ async fn main() {
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
-    let db_url: String = format!("sqlite:{}/caterpie.db?mode=rwc", working_dir);
+    let db_url: String = format!("sqlite:{working_dir}/caterpie.db?mode=rwc");
     let db_t = Database::connect(db_url).await;
     if let Err(err) = &db_t {
         error!("Error while connecting to database: {err:?}");
