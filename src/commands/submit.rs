@@ -1,6 +1,6 @@
 use std::time::{Duration};
 
-use sea_orm::{ActiveValue, EntityTrait};
+use sea_orm::{ActiveValue, ColumnTrait, EntityTrait, QueryFilter};
 use crate::entities::actions::ActionType;
 use crate::entities::{actions, prelude::*};
 
@@ -29,6 +29,14 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
             return Ok(());
         }
         let issue_ids = issue_ids_t.unwrap();
+
+        if let Ok(Some(e)) = Actions::find().filter(actions::Column::GithubLink.eq(*submit_link)).one(&h.db_conn).await {
+            command.edit_response(&ctx.http, EditInteractionResponse::new().content(format!(
+                "<@{}> has already {} this bug ([here]({}))",
+                e.user_id, match action_type {ActionType::ConfirmBug => "confirmed", ActionType::ReportBug => "discovered", ActionType::PRFix => "solved"}, e.github_link
+            ))).await?;
+            return Ok(());
+        }
         
         let fetched_issue = octocrab::instance().issues("rh-hideout", "pokeemerald-expansion").get(issue_ids.issue_id).await;
         if let Err(e) = fetched_issue {
