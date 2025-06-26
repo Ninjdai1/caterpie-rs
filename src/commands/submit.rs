@@ -1,6 +1,7 @@
 use std::time::{Duration};
 
 use sea_orm::{ActiveValue, EntityTrait};
+use crate::entities::actions::ActionType;
 use crate::entities::{actions, prelude::*};
 
 use crate::utils::issues::IssueIds;
@@ -98,8 +99,11 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
                     command.edit_response(&ctx.http, EditInteractionResponse::new().content(format!("Successfully submitted your {} !", action_type.to_string())).components(vec![]).embeds(vec![])).await?;
                     CONFIG.feed_channel.send_message(&ctx.http, CreateMessage::new().embed(
                         CreateEmbed::new().description(
-                            format!("### <@{}> submitted a {}\nLinked {}: [#{} - {}]({})",
-                            command.user.id.get(), action_type.to_string(), action_type.get_github_type(), issue.number, issue.title, submit_link))
+                            format!("### <@{}> {} a bug ! +{} points\nLinked {}: [#{} - {}]({})",
+                            command.user.id.get(),
+                            match action_type {ActionType::ConfirmBug => "confirmed", ActionType::ReportBug => "discovered", ActionType::PRFix => "solved"},
+                            action_type.get_points(),
+                            action_type.get_github_type(), issue.number, issue.title, submit_link))
                     )).await?;
                 } else {
                     command.edit_response(&ctx.http, EditInteractionResponse::new().content("Cancelled the submission").components(vec![]).embeds(vec![])).await?;

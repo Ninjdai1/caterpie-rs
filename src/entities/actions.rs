@@ -32,6 +32,14 @@ impl ActionType {
             Self::PRFix => "PR"
         }
     }
+
+    pub fn get_points(&self) -> u8 {
+        match self {
+            Self::ConfirmBug => 1,
+            Self::ReportBug => 3,
+            Self::PRFix => 5
+        }
+    }
 }
 
 impl ToString for ActionType {
