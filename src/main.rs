@@ -28,7 +28,7 @@ pub struct Handler {
 static CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
     contest_start_timestamp: 1749506400,
     feed_channel: ChannelId::new(1387772097471840266),
-    permanent_leaderboard: (ChannelId::new(1386765701590814842), MessageId::from(1387686765644615700))
+    permanent_leaderboard: (ChannelId::new(1386765701590814842), MessageId::from(1394934058261413960))
 });
 
 static CONTEST_START_DATE: LazyLock<DateTime<Utc>> = LazyLock::new(|| DateTime::from_timestamp(CONFIG.contest_start_timestamp, 0).unwrap());
