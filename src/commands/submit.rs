@@ -5,7 +5,7 @@ use crate::entities::actions::{ActionStatus, ActionType};
 use crate::entities::{actions, prelude::*};
 
 use crate::utils::issues::IssueIds;
-use crate::{Handler, CONFIG, CONTEST_START_DATE};
+use crate::{Handler, CONFIG, CONTEST_END_DATE, CONTEST_START_DATE};
 
 use serenity::all::*;
 
@@ -75,6 +75,16 @@ pub async fn run(h: &Handler, ctx: &Context, command: &CommandInteraction) -> Re
                     format!("The submitted {} dates from before the start of the contest >.<\nThe contest started <t:{}:R> while the {} was created <t:{}:R>",
                         action_type.get_github_type(),
                         CONTEST_START_DATE.timestamp(),
+                        action_type.get_github_type(),
+                        action_creation_date.timestamp()))).await?;
+            return Ok(())
+        }
+
+        if action_creation_date.signed_duration_since(*CONTEST_END_DATE).num_seconds() > 0 {
+            command.edit_response(&ctx.http, EditInteractionResponse::new().content(
+                    format!("The submitted {} dates from after the end of the contest >.<\nThe contest ended <t:{}:R> while the {} was created <t:{}:R>",
+                        action_type.get_github_type(),
+                        CONTEST_END_DATE.timestamp(),
                         action_type.get_github_type(),
                         action_creation_date.timestamp()))).await?;
             return Ok(())
