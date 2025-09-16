@@ -21,7 +21,7 @@ pub enum ActionType {
     #[sea_orm(string_value = "C")]
     ConfirmBug,
     #[sea_orm(string_value = "F")]
-    PRFix
+    PRFix,
 }
 
 impl ActionType {
@@ -29,7 +29,7 @@ impl ActionType {
         match self {
             Self::ConfirmBug => "Comment",
             Self::ReportBug => "Issue",
-            Self::PRFix => "PR"
+            Self::PRFix => "PR",
         }
     }
 
@@ -37,7 +37,7 @@ impl ActionType {
         match self {
             Self::ConfirmBug => 1,
             Self::ReportBug => 3,
-            Self::PRFix => 5
+            Self::PRFix => 5,
         }
     }
 }
@@ -47,7 +47,7 @@ impl ToString for ActionType {
         match self {
             Self::ReportBug => "Bug Report".to_string(),
             Self::ConfirmBug => "Bug Confirmation".to_string(),
-            Self::PRFix => "Bugfix PR".to_string()
+            Self::PRFix => "Bugfix PR".to_string(),
         }
     }
 }
@@ -60,7 +60,7 @@ pub enum ActionStatus {
     #[sea_orm(string_value = "Y")]
     Confirmed,
     #[sea_orm(string_value = "N")]
-    Denied
+    Denied,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

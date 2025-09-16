@@ -1,12 +1,14 @@
 mod commands;
-mod interactions;
 mod entities;
+mod interactions;
 mod utils;
 
 use chrono::{DateTime, Utc};
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, Schema};
-use serenity::all::{ChannelId, ComponentInteractionDataKind, GuildId, MessageId, Ready};
-use serenity::all::{Command, CreateInteractionResponse, CreateInteractionResponseMessage, Interaction};
+use serenity::all::{ChannelId, ComponentInteractionDataKind, GuildId, MessageId, Ready, RoleId};
+use serenity::all::{
+    Command, CreateInteractionResponse, CreateInteractionResponseMessage, Interaction,
+};
 use serenity::async_trait;
 use serenity::prelude::*;
 
@@ -15,26 +17,32 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 
-use log::{info, debug, error};
+use log::{debug, error, info};
 
 use crate::utils::config::Config;
 use crate::utils::ui::update_permanent_leaderboard;
 
 pub struct Handler {
     db_conn: DatabaseConnection,
-    is_loop_running: AtomicBool
+    is_loop_running: AtomicBool,
 }
 
 static CONFIG: LazyLock<Config> = LazyLock::new(|| Config {
-    contest_start_timestamp: 1757919600,
-    contest_end_timestamp: 1762761600,
+    contest_start_timestamp: 1759771800,
+    contest_end_timestamp: 1764613800,
     feed_channel: ChannelId::new(1387772097471840266),
-    permanent_leaderboard: (ChannelId::new(1386765701590814842), MessageId::from(1394934058261413960))
+    permanent_leaderboard: (
+        ChannelId::new(1386765701590814842),
+        MessageId::from(1394934058261413960),
+    ),
 });
 
-static CONTEST_START_DATE: LazyLock<DateTime<Utc>> = LazyLock::new(|| DateTime::from_timestamp(CONFIG.contest_start_timestamp, 0).unwrap());
-static CONTEST_END_DATE: LazyLock<DateTime<Utc>> = LazyLock::new(|| DateTime::from_timestamp(CONFIG.contest_end_timestamp, 0).unwrap());
+static CONTEST_START_DATE: LazyLock<DateTime<Utc>> =
+    LazyLock::new(|| DateTime::from_timestamp(CONFIG.contest_start_timestamp, 0).unwrap());
+static CONTEST_END_DATE: LazyLock<DateTime<Utc>> =
+    LazyLock::new(|| DateTime::from_timestamp(CONFIG.contest_end_timestamp, 0).unwrap());
 
+static EXPANSION_SENATE_ROLE: RoleId = RoleId::new(1077007974666621039);
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -58,28 +66,41 @@ impl EventHandler for Handler {
                     let builder = CreateInteractionResponse::Message(data);
                     let _ = command.create_response(&ctx.http, builder).await;
                 }
-            },
+            }
             Interaction::Component(interaction) => {
                 let args: Vec<&str> = interaction.data.custom_id.split('-').collect();
                 if args[0] == "ignore" {
                     return;
                 }
                 let res = match interaction.data.kind {
-                    ComponentInteractionDataKind::StringSelect {ref values} => match args[0] {
-                        "leaderboard" => interactions::selectmenus::leaderboard::run(&self, &ctx, &interaction, &values).await,
-                        _ => Err(SerenityError::Other("interaction not implemented"))
+                    ComponentInteractionDataKind::StringSelect { ref values } => match args[0] {
+                        "leaderboard" => {
+                            interactions::selectmenus::leaderboard::run(
+                                &self,
+                                &ctx,
+                                &interaction,
+                                &values,
+                            )
+                            .await
+                        }
+                        _ => Err(SerenityError::Other("interaction not implemented")),
                     },
-                    _ => Err(SerenityError::Other("component interaction type not implemented"))
+                    _ => Err(SerenityError::Other(
+                        "component interaction type not implemented",
+                    )),
                 };
 
                 if let Err(e) = res {
-                    error!("Error while running component interaction {}: {e:?}", interaction.data.custom_id);
+                    error!(
+                        "Error while running component interaction {}: {e:?}",
+                        interaction.data.custom_id
+                    );
                     let data = CreateInteractionResponseMessage::new().content("Encountered an error while running component interaction, please report to the developers").ephemeral(true);
                     let builder = CreateInteractionResponse::Message(data);
                     let _ = interaction.create_response(&ctx.http, builder).await;
                 }
             }
-            _ => ()
+            _ => (),
         }
     }
 
@@ -92,13 +113,17 @@ impl EventHandler for Handler {
         }
 
         debug!("Registering commands...");
-        let commands = Command::set_global_commands(&ctx.http, vec![
-            commands::ping::register(),
-            commands::submit::register(),
-            commands::leaderboard::register(),
-            commands::verify::register(),
-            commands::dev::register()
-        ]).await;
+        let commands = Command::set_global_commands(
+            &ctx.http,
+            vec![
+                commands::ping::register(),
+                commands::submit::register(),
+                commands::leaderboard::register(),
+                commands::verify::register(),
+                commands::dev::register(),
+            ],
+        )
+        .await;
         debug!("Registered slash commands: {commands:#?}");
         info!("Registered {} commands", commands.unwrap().iter().len());
 
@@ -118,23 +143,30 @@ impl EventHandler for Handler {
     }
 }
 
-
 #[tokio::main]
 async fn main() {
     let working_dir = env::var("WORKDIR").unwrap_or(".".to_string());
 
     println!("Loading log config file at {working_dir}/config/log4rs.yaml");
-    if let Err(err) = log4rs::init_file(format!("{working_dir}/config/log4rs.yaml"), Default::default()) {
+    if let Err(err) = log4rs::init_file(
+        format!("{working_dir}/config/log4rs.yaml"),
+        Default::default(),
+    ) {
         println!("Error while loading logger config: {err:?}");
         return;
     }
 
-    let github_pat = env::var("GITHUB_PAT").expect("Expected a github personal access token in the environment");
-    octocrab::initialise(octocrab::Octocrab::builder().personal_token(github_pat).build().unwrap());
+    let github_pat =
+        env::var("GITHUB_PAT").expect("Expected a github personal access token in the environment");
+    octocrab::initialise(
+        octocrab::Octocrab::builder()
+            .personal_token(github_pat)
+            .build()
+            .unwrap(),
+    );
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
-    let intents = GatewayIntents::GUILD_MESSAGES
-        | GatewayIntents::MESSAGE_CONTENT;
+    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
     let db_url: String = format!("sqlite:{working_dir}/caterpie.db?mode=rwc");
     let db_t = Database::connect(db_url).await;
@@ -146,18 +178,27 @@ async fn main() {
 
     let builder = db.get_database_backend();
     let schema = Schema::new(builder);
-    if let Err(err) = db.execute(builder.build(schema.create_table_from_entity(crate::entities::prelude::Actions).if_not_exists())).await {
+    if let Err(err) = db
+        .execute(
+            builder.build(
+                schema
+                    .create_table_from_entity(crate::entities::prelude::Actions)
+                    .if_not_exists(),
+            ),
+        )
+        .await
+    {
         error!("Error while creating database tables: {err:?}");
         return;
     }
 
-    let mut client =
-        Client::builder(&token, intents)
+    let mut client = Client::builder(&token, intents)
         .event_handler(Handler {
             db_conn: db,
-            is_loop_running: AtomicBool::new(false)
+            is_loop_running: AtomicBool::new(false),
         })
-        .await.expect("Err creating client");
+        .await
+        .expect("Err creating client");
 
     if let Err(err) = client.start().await {
         error!("Client error: {err:?}");
