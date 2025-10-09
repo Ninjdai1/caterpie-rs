@@ -36,7 +36,7 @@ impl ActionType {
     pub fn get_points(&self) -> u8 {
         match self {
             Self::ConfirmBug => 1,
-            Self::ReportBug => 3,
+            Self::ReportBug => 2,
             Self::PRFix => 5,
         }
     }

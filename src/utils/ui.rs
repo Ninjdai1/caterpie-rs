@@ -17,7 +17,7 @@ pub struct Score {
 
 impl Score {
     pub fn get_total_points(&self) -> u64 {
-        self.bug_confirm + 3 * self.bug_report + 5 * self.pr_fix
+        self.bug_confirm + 2 * self.bug_report + 5 * self.pr_fix
     }
 }
 
